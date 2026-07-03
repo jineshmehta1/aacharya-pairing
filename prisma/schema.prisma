@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tournament {
+  id        String   @id @default(uuid())
+  name      String
+  status    String   @default("DRAFT") // DRAFT, IN_PROGRESS, COMPLETED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  players   Player[]
+  rounds    Round[]
+}
+
+model Player {
+  id           String     @id @default(uuid())
+  name         String
+  rating       Int        @default(1200)
+  score        Float      @default(0)
+  buchholz     Float      @default(0)
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  asPlayer1 Match[] @relation("Player1Matches")
+  asPlayer2 Match[] @relation("Player2Matches")
+}
+
+model Round {
+  id           String     @id @default(uuid())
+  roundNumber  Int
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches      Match[]
+  createdAt    DateTime   @default(now())
+}
+
+model Match {
+  id        String  @id @default(uuid())
+  roundId   String
+  round     Round   @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player1Id String
+  player1   Player  @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2Id String?
+  player2   Player? @relation("Player2Matches", fields: [player2Id], references: [id])
+  result    String? // "1-0", "0-1", "1/2-1/2", or null if not finished. For BYE, player2 is null, result "1-0"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
