@@ -267,7 +267,7 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
                         <Select 
                           disabled={isPending || loading} 
                           value={optimisticResults[match.id] ?? match.result ?? "PENDING"} 
-                          onValueChange={(val) => handleResultChange(match, val === "PENDING" ? "" : val)}
+                          onValueChange={(val) => handleResultChange(match, (val || "") === "PENDING" ? "" : (val as string))}
                         >
                           <SelectTrigger className="w-[120px] ml-auto">
                             <SelectValue placeholder="Result" />
