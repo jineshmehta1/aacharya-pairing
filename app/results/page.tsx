@@ -35,7 +35,7 @@ export default async function ResultsPage() {
             No active tournaments at the moment.
           </div>
         ) : (
-          tournamentsData.map((t) => {
+          tournamentsData.map((t: any) => {
             if (!t) return null;
             return (
               <Card key={t.id} className="overflow-hidden border-none shadow-xl hover:shadow-2xl transition-all duration-300 bg-background/50 backdrop-blur-sm">
