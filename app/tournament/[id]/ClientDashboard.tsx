@@ -10,10 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Play, Plus, UserPlus, CheckCircle } from "lucide-react";
 
+import { read, utils } from "xlsx";
+
 export default function ClientDashboard({ initialTournament }: { initialTournament: any }) {
   const [tournament, setTournament] = useState(initialTournament);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerRating, setNewPlayerRating] = useState("1200");
+  const [newPlayerAge, setNewPlayerAge] = useState("");
   const [loading, setLoading] = useState(false);
 
   // We rely on revalidatePath in Server Actions to refresh the page, 
@@ -26,9 +29,47 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
     e.preventDefault();
     if (!newPlayerName.trim()) return;
     setLoading(true);
-    await addPlayer(tournament.id, newPlayerName, parseInt(newPlayerRating));
+    await addPlayer(
+      tournament.id, 
+      newPlayerName, 
+      parseInt(newPlayerRating),
+      newPlayerAge ? parseInt(newPlayerAge) : null
+    );
     setNewPlayerName("");
+    setNewPlayerAge("");
     setLoading(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const ab = evt.target?.result as ArrayBuffer;
+        const wb = read(ab, { type: "array" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = utils.sheet_to_json(ws);
+        
+        const playersData = data.map((row: any) => ({
+          name: row.Name || row.name || "Unknown",
+          rating: parseInt(row.Rating || row.rating) || 1200,
+          age: parseInt(row.Age || row.age) || undefined,
+        }));
+
+        const { addPlayersBulk } = await import("@/lib/actions");
+        await addPlayersBulk(tournament.id, playersData);
+        setLoading(false);
+        e.target.value = ""; // Reset input
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
   };
 
   const handleGenerateRound = async () => {
@@ -40,6 +81,7 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
   const handleResultChange = async (match: any, newResult: string) => {
     setLoading(true);
     await updateMatchResult(
+      tournament.id,
       match.id,
       match.player1Id,
       match.player2Id,
@@ -88,9 +130,32 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
                   disabled={tournament.status === "COMPLETED"}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || tournament.status === "COMPLETED"}>
-                Add Player
-              </Button>
+              <div className="space-y-2">
+                <Input 
+                  type="number" 
+                  placeholder="Age (Optional)" 
+                  value={newPlayerAge}
+                  onChange={(e) => setNewPlayerAge(e.target.value)}
+                  disabled={tournament.status === "COMPLETED"}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" className="w-full" disabled={loading || tournament.status === "COMPLETED"}>
+                  Add Player
+                </Button>
+                <div className="relative w-full">
+                  <Input 
+                    type="file" 
+                    accept=".xlsx, .xls, .csv" 
+                    onChange={handleFileUpload}
+                    disabled={loading || tournament.status === "COMPLETED"}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <Button type="button" variant="outline" className="w-full pointer-events-none" disabled={loading || tournament.status === "COMPLETED"}>
+                    Upload Excel
+                  </Button>
+                </div>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -105,6 +170,7 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="pl-6 rounded-tl-lg font-semibold text-foreground">Name</TableHead>
+                  <TableHead className="text-center font-semibold text-foreground">Age</TableHead>
                   <TableHead className="text-center font-semibold text-foreground">Results</TableHead>
                   <TableHead className="font-semibold text-foreground">Pts</TableHead>
                   <TableHead className="text-muted-foreground text-xs" title="Buchholz">BH</TableHead>
@@ -116,6 +182,7 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
                 {initialTournament.players.map((p: any) => (
                   <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="pl-6 font-semibold">{p.name}</TableCell>
+                    <TableCell className="text-center text-muted-foreground">{p.age || "—"}</TableCell>
                     <TableCell>
                       <div className="flex space-x-1 justify-center">
                         {initialTournament.rounds.map((r: any) => {
@@ -139,7 +206,7 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
                 ))}
                 {initialTournament.players.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
                       No players yet.
                     </TableCell>
                   </TableRow>
