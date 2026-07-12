@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { addPlayer, generateNextRound, updateMatchResult, markTournamentCompleted } from "@/lib/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
   const [newPlayerRating, setNewPlayerRating] = useState("1200");
   const [newPlayerAge, setNewPlayerAge] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticResults, setOptimisticResults] = useState<Record<string, string>>({});
 
   // We rely on revalidatePath in Server Actions to refresh the page, 
   // but since we are in a client component, we might want to let the Server Component handle the re-render.
@@ -78,17 +80,21 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
     setLoading(false);
   };
 
-  const handleResultChange = async (match: any, newResult: string) => {
-    setLoading(true);
-    await updateMatchResult(
-      tournament.id,
-      match.id,
-      match.player1Id,
-      match.player2Id,
-      newResult as any,
-      match.result
-    );
-    setLoading(false);
+  const handleResultChange = (match: any, newResult: string) => {
+    // 1. Instantly update the UI so it feels lightning fast
+    setOptimisticResults((prev) => ({ ...prev, [match.id]: newResult }));
+    
+    // 2. Run the database updates and server recompilation in the background
+    startTransition(async () => {
+      await updateMatchResult(
+        tournament.id,
+        match.id,
+        match.player1Id,
+        match.player2Id,
+        newResult as any,
+        match.result
+      );
+    });
   };
 
   const handleMarkCompleted = async () => {
@@ -259,8 +265,8 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
                         <Badge variant="outline">1-0 (BYE)</Badge>
                       ) : (
                         <Select 
-                          disabled={loading} 
-                          value={match.result || "PENDING"} 
+                          disabled={isPending || loading} 
+                          value={optimisticResults[match.id] ?? match.result ?? "PENDING"} 
                           onValueChange={(val) => handleResultChange(match, val === "PENDING" ? "" : val)}
                         >
                           <SelectTrigger className="w-[120px] ml-auto">
