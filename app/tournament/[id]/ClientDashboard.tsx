@@ -12,11 +12,14 @@ import { Play, Plus, UserPlus, CheckCircle } from "lucide-react";
 
 import { read, utils } from "xlsx";
 
-export default function ClientDashboard({ initialTournament }: { initialTournament: any }) {
+export default function ClientDashboard({ initialTournament, students = [] }: { initialTournament: any, students?: any[] }) {
   const [tournament, setTournament] = useState(initialTournament);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("new");
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerFatherName, setNewPlayerFatherName] = useState("");
+  const [newPlayerDob, setNewPlayerDob] = useState("");
+  const [newPlayerPhone, setNewPlayerPhone] = useState("");
   const [newPlayerRating, setNewPlayerRating] = useState("1200");
-  const [newPlayerAge, setNewPlayerAge] = useState("");
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [optimisticResults, setOptimisticResults] = useState<Record<string, string>>({});
@@ -29,17 +32,49 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim()) return;
+    if (selectedStudentId === "new" && !newPlayerName.trim()) return;
+    
+    let finalName = newPlayerName;
+    let finalFatherName = newPlayerFatherName;
+    let finalDob = newPlayerDob ? new Date(newPlayerDob) : null;
+    let finalPhone = newPlayerPhone;
+    let finalRating = parseInt(newPlayerRating);
+
+    if (selectedStudentId !== "new") {
+      const student = students.find((s) => s.id === selectedStudentId);
+      if (student) {
+        finalName = student.name;
+        finalFatherName = student.fatherName || "";
+        finalDob = student.dob ? new Date(student.dob) : null;
+        finalPhone = student.phone || "";
+        finalRating = student.rating || 1200;
+      }
+    }
+
     setLoading(true);
     await addPlayer(
       tournament.id, 
-      newPlayerName, 
-      parseInt(newPlayerRating),
-      newPlayerAge ? parseInt(newPlayerAge) : null
+      finalName, 
+      finalRating,
+      finalFatherName || null,
+      finalDob,
+      finalPhone || null,
+      selectedStudentId === "new" ? null : selectedStudentId
     );
     setNewPlayerName("");
-    setNewPlayerAge("");
+    setNewPlayerFatherName("");
+    setNewPlayerDob("");
+    setNewPlayerPhone("");
+    setSelectedStudentId("new");
     setLoading(false);
+  };
+
+  const calculateAge = (dobString: string | null) => {
+    if (!dobString) return "—";
+    const birthDate = new Date(dobString);
+    if (isNaN(birthDate.getTime())) return "—";
+    const diff = new Date().getTime() - birthDate.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)).toString();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,11 +91,21 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
         const ws = wb.Sheets[wsname];
         const data = utils.sheet_to_json(ws);
         
-        const playersData = data.map((row: any) => ({
-          name: row.Name || row.name || "Unknown",
-          rating: parseInt(row.Rating || row.rating) || 1200,
-          age: parseInt(row.Age || row.age) || undefined,
-        }));
+        const playersData = data.map((row: any) => {
+          const dobRaw = row.DOB || row.dob;
+          let dobParsed: Date | undefined = undefined;
+          if (dobRaw) {
+            dobParsed = new Date(dobRaw);
+            if (isNaN(dobParsed.getTime())) dobParsed = undefined;
+          }
+          return {
+            name: row.Name || row.name || "Unknown",
+            rating: parseInt(row.Rating || row.rating) || 1200,
+            fatherName: row["Father Name"] || row.fatherName || undefined,
+            dob: dobParsed,
+            phone: row.Phone || row.phone || undefined,
+          };
+        });
 
         const { addPlayersBulk } = await import("@/lib/actions");
         await addPlayersBulk(tournament.id, playersData);
@@ -120,31 +165,88 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
           <CardContent>
             <form onSubmit={handleAddPlayer} className="space-y-4">
               <div className="space-y-2">
-                <Input 
-                  placeholder="Player Name" 
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
+                <Select
+                  value={selectedStudentId}
+                  onValueChange={(val) => {
+                    setSelectedStudentId(val || "new");
+                    if (val !== "new") {
+                      const st = students.find((s) => s.id === val);
+                      if (st) {
+                        setNewPlayerName(st.name);
+                        setNewPlayerFatherName(st.fatherName || "");
+                        setNewPlayerDob(st.dob ? new Date(st.dob).toISOString().split('T')[0] : "");
+                        setNewPlayerPhone(st.phone || "");
+                      }
+                    } else {
+                      setNewPlayerName("");
+                      setNewPlayerFatherName("");
+                      setNewPlayerDob("");
+                      setNewPlayerPhone("");
+                    }
+                  }}
                   disabled={tournament.status === "COMPLETED"}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select existing student" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">-- Create New Student --</SelectItem>
+                    {students.map((st) => (
+                      <SelectItem key={st.id} value={st.id}>
+                        {st.name} {st.fatherName ? `(s/o ${st.fatherName})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-2">
-                <Input 
-                  type="number" 
-                  placeholder="Rating (e.g. 1200)" 
-                  value={newPlayerRating}
-                  onChange={(e) => setNewPlayerRating(e.target.value)}
-                  disabled={tournament.status === "COMPLETED"}
-                />
-              </div>
-              <div className="space-y-2">
-                <Input 
-                  type="number" 
-                  placeholder="Age (Optional)" 
-                  value={newPlayerAge}
-                  onChange={(e) => setNewPlayerAge(e.target.value)}
-                  disabled={tournament.status === "COMPLETED"}
-                />
-              </div>
+
+              {selectedStudentId === "new" && (
+                <>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Player Name" 
+                      value={newPlayerName}
+                      onChange={(e) => setNewPlayerName(e.target.value)}
+                      disabled={tournament.status === "COMPLETED"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Father's Name (Optional)" 
+                      value={newPlayerFatherName}
+                      onChange={(e) => setNewPlayerFatherName(e.target.value)}
+                      disabled={tournament.status === "COMPLETED"}
+                    />
+                  </div>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <label className="block pl-1">Date of Birth</label>
+                    <Input 
+                      type="date"
+                      value={newPlayerDob}
+                      onChange={(e) => setNewPlayerDob(e.target.value)}
+                      disabled={tournament.status === "COMPLETED"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Phone Number (Optional)" 
+                      type="tel"
+                      value={newPlayerPhone}
+                      onChange={(e) => setNewPlayerPhone(e.target.value)}
+                      disabled={tournament.status === "COMPLETED"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input 
+                      type="number" 
+                      placeholder="Rating (e.g. 1200)" 
+                      value={newPlayerRating}
+                      onChange={(e) => setNewPlayerRating(e.target.value)}
+                      disabled={tournament.status === "COMPLETED"}
+                    />
+                  </div>
+                </>
+              )}
               <div className="flex gap-2">
                 <Button type="submit" className="w-full" disabled={loading || tournament.status === "COMPLETED"}>
                   Add Player
@@ -187,8 +289,11 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
               <TableBody>
                 {initialTournament.players.map((p: any) => (
                   <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="pl-6 font-semibold">{p.name}</TableCell>
-                    <TableCell className="text-center text-muted-foreground">{p.age || "—"}</TableCell>
+                    <TableCell className="pl-6 font-semibold">
+                      {p.name}
+                      {p.fatherName && <span className="block text-xs font-normal text-muted-foreground">s/o {p.fatherName}</span>}
+                    </TableCell>
+                    <TableCell className="text-center text-muted-foreground">{calculateAge(p.dob)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-1 justify-center">
                         {initialTournament.rounds.map((r: any) => {

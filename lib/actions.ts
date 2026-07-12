@@ -51,24 +51,115 @@ export async function createTournament(name: string) {
   return tournament;
 }
 
-export async function addPlayer(tournamentId: string, name: string, rating: number, age: number | null = null) {
+export async function getStudents() {
+  return await prisma.student.findMany({
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function createStudent(name: string, fatherName: string | null, dob: Date | null, phone: string | null, rating: number = 1200) {
+  const student = await prisma.student.create({
+    data: {
+      name,
+      fatherName,
+      dob,
+      phone,
+      rating,
+    },
+  });
+  revalidatePath("/students");
+  return student;
+}
+
+export async function updateStudent(id: string, name: string, fatherName: string | null, dob: Date | null, phone: string | null, rating: number = 1200) {
+  const student = await prisma.student.update({
+    where: { id },
+    data: {
+      name,
+      fatherName,
+      dob,
+      phone,
+      rating,
+    },
+  });
+  revalidatePath("/students");
+  return student;
+}
+
+export async function deleteStudent(id: string) {
+  await prisma.student.delete({
+    where: { id },
+  });
+  revalidatePath("/students");
+}
+
+export async function addPlayer(
+  tournamentId: string, 
+  name: string, 
+  rating: number, 
+  fatherName: string | null = null,
+  dob: Date | null = null,
+  phone: string | null = null,
+  studentId: string | null = null
+) {
+  let finalStudentId = studentId;
+
+  // If no studentId provided, create a new student so it's added to the database
+  if (!finalStudentId) {
+    const student = await prisma.student.create({
+      data: {
+        name,
+        fatherName,
+        dob,
+        phone,
+        rating,
+      },
+    });
+    finalStudentId = student.id;
+  }
+
   await prisma.player.create({
     data: {
       name,
       rating,
-      age,
+      fatherName,
+      dob,
+      phone,
+      studentId: finalStudentId,
       tournamentId,
     },
   });
   revalidatePath(`/tournament/${tournamentId}`);
 }
 
-export async function addPlayersBulk(tournamentId: string, playersData: { name: string, rating?: number, age?: number }[]) {
-  const data = playersData.map((p) => ({
-    name: p.name,
-    rating: p.rating || 1200,
-    age: p.age || null,
-    tournamentId,
+export async function addPlayersBulk(tournamentId: string, playersData: { name: string, rating?: number, fatherName?: string, dob?: Date, phone?: string }[]) {
+  const data = await Promise.all(playersData.map(async (p) => {
+    // Try to find an existing student by name to link to, or create one?
+    // The requirement says we should add them to the database if they are new.
+    // For simplicity in bulk add, we just add them to the tournament.
+    // We can also create students for them.
+    let student = await prisma.student.findFirst({ where: { name: p.name } });
+    if (!student) {
+      student = await prisma.student.create({
+        data: {
+          name: p.name,
+          rating: p.rating || 1200,
+          fatherName: p.fatherName || null,
+          dob: p.dob || null,
+          phone: p.phone || null,
+        }
+      });
+    }
+
+    return {
+      name: p.name,
+      rating: p.rating || 1200,
+      fatherName: p.fatherName || null,
+      dob: p.dob || null,
+      phone: p.phone || null,
+      studentId: student.id,
+      tournamentId,
+    };
   }));
 
   await prisma.player.createMany({

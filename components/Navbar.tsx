@@ -35,6 +35,13 @@ export function Navbar() {
             <span className="hidden sm:inline">Leaderboards</span>
           </Link>
 
+          <Link
+            href="/students"
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+          >
+            <span className="hidden sm:inline">Students</span>
+          </Link>
+
           {/* Admin Login */}
           <Link
             href="/pairing"

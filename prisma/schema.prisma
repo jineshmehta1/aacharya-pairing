@@ -22,7 +22,11 @@ model Player {
   id           String     @id @default(uuid())
   name         String
   rating       Int        @default(1200)
-  age          Int?
+  fatherName   String?
+  dob          DateTime?
+  phone        String?
+  studentId    String?
+  student      Student?   @relation(fields: [studentId], references: [id], onDelete: SetNull)
   score        Float      @default(0)
   buchholz        Float      @default(0)
   sonnebornBerger Float      @default(0)
@@ -57,4 +61,16 @@ model Match {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Student {
+  id         String   @id @default(uuid())
+  name       String
+  fatherName String?
+  dob        DateTime?
+  phone      String?
+  rating     Int      @default(1200)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  players    Player[]
 }
