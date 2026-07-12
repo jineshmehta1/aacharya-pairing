@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Tournament {
@@ -20,10 +21,12 @@ model Tournament {
 model Player {
   id           String     @id @default(uuid())
   name         String
-  rating       Int        @default(1200)
-  score        Float      @default(0)
-  buchholz     Float      @default(0)
-  tournamentId String
+  rating          Int        @default(1200)
+  score           Float      @default(0)
+  buchholz        Float      @default(0)
+  sonnebornBerger Float      @default(0)
+  cumulative      Float      @default(0)
+  tournamentId    String
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

@@ -11,7 +11,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="space-y-6 px-4 sm:px-0">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-primary">{tournament.name}</h1>
       </div>

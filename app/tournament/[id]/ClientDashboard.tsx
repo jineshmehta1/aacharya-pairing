@@ -61,10 +61,11 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column: Players */}
       <div className="lg:col-span-1 space-y-6">
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-background to-muted/30 overflow-hidden">
+          <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
           <CardHeader>
-            <CardTitle className="text-xl flex items-center">
-              <UserPlus className="w-5 h-5 mr-2" />
+            <CardTitle className="text-xl flex items-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 font-bold">
+              <UserPlus className="w-5 h-5 mr-2 text-blue-500" />
               Add Player
             </CardTitle>
           </CardHeader>
@@ -94,41 +95,46 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg overflow-hidden">
+          <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-pink-600"></div>
           <CardHeader>
-            <CardTitle className="text-xl text-primary">Standings</CardTitle>
+            <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Standings</CardTitle>
           </CardHeader>
           <CardContent className="px-0 overflow-x-auto">
-            <Table className="min-w-[400px]">
+            <Table className="min-w-[500px]">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-4">Name</TableHead>
-                  <TableHead className="text-center">Results</TableHead>
-                  <TableHead>Pts</TableHead>
-                  <TableHead className="pr-4">BH</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="pl-6 rounded-tl-lg font-semibold text-foreground">Name</TableHead>
+                  <TableHead className="text-center font-semibold text-foreground">Results</TableHead>
+                  <TableHead className="font-semibold text-foreground">Pts</TableHead>
+                  <TableHead className="text-muted-foreground text-xs" title="Buchholz">BH</TableHead>
+                  <TableHead className="text-muted-foreground text-xs" title="Sonneborn-Berger">SB</TableHead>
+                  <TableHead className="pr-6 text-muted-foreground text-xs" title="Cumulative">CUM</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {initialTournament.players.map((p: any) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="pl-4 font-medium">{p.name}</TableCell>
+                  <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="pl-6 font-semibold">{p.name}</TableCell>
                     <TableCell>
                       <div className="flex space-x-1 justify-center">
                         {initialTournament.rounds.map((r: any) => {
                           const match = r.matches.find((m: any) => m.player1Id === p.id || m.player2Id === p.id);
-                          if (!match) return <span key={r.id} className="w-5 h-5 flex items-center justify-center text-[10px] bg-muted rounded">-</span>;
-                          if (match.player2Id === null) return <span key={r.id} className="w-5 h-5 flex items-center justify-center text-[10px] bg-green-500 text-white rounded font-bold">1</span>;
-                          if (!match.result) return <span key={r.id} className="w-5 h-5 flex items-center justify-center text-[10px] bg-muted rounded">?</span>;
+                          if (!match) return <span key={r.id} className="w-6 h-6 flex items-center justify-center text-[10px] bg-muted rounded-full shadow-sm">-</span>;
+                          if (match.player2Id === null) return <span key={r.id} className="w-6 h-6 flex items-center justify-center text-[10px] bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full shadow-sm font-bold transition-transform hover:scale-110">1</span>;
+                          if (!match.result) return <span key={r.id} className="w-6 h-6 flex items-center justify-center text-[10px] bg-muted/80 rounded-full shadow-sm backdrop-blur-sm">?</span>;
                           
                           const isP1 = match.player1Id === p.id;
-                          if (match.result === "1-0") return <span key={r.id} className={`w-5 h-5 flex items-center justify-center text-[10px] rounded font-bold ${isP1 ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>{isP1 ? "1" : "0"}</span>;
-                          if (match.result === "0-1") return <span key={r.id} className={`w-5 h-5 flex items-center justify-center text-[10px] rounded font-bold ${!isP1 ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>{!isP1 ? "1" : "0"}</span>;
-                          return <span key={r.id} className="w-5 h-5 flex items-center justify-center text-[10px] bg-gray-500 text-white rounded font-bold">½</span>;
+                          if (match.result === "1-0") return <span key={r.id} className={`w-6 h-6 flex items-center justify-center text-[10px] rounded-full shadow-sm font-bold transition-transform hover:scale-110 ${isP1 ? "bg-gradient-to-br from-green-400 to-green-600 text-white" : "bg-gradient-to-br from-red-400 to-red-600 text-white"}`}>{isP1 ? "1" : "0"}</span>;
+                          if (match.result === "0-1") return <span key={r.id} className={`w-6 h-6 flex items-center justify-center text-[10px] rounded-full shadow-sm font-bold transition-transform hover:scale-110 ${!isP1 ? "bg-gradient-to-br from-green-400 to-green-600 text-white" : "bg-gradient-to-br from-red-400 to-red-600 text-white"}`}>{!isP1 ? "1" : "0"}</span>;
+                          return <span key={r.id} className="w-6 h-6 flex items-center justify-center text-[10px] bg-gradient-to-br from-slate-400 to-slate-600 text-white rounded-full shadow-sm font-bold transition-transform hover:scale-110">½</span>;
                         })}
                       </div>
                     </TableCell>
-                    <TableCell>{p.score}</TableCell>
-                    <TableCell className="pr-4 text-muted-foreground">{p.buchholz}</TableCell>
+                    <TableCell className="font-bold text-lg">{p.score}</TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">{p.buchholz}</TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">{p.sonnebornBerger ?? 0}</TableCell>
+                    <TableCell className="pr-6 text-muted-foreground font-mono text-sm">{p.cumulative ?? 0}</TableCell>
                   </TableRow>
                 ))}
                 {initialTournament.players.length === 0 && (
@@ -146,26 +152,26 @@ export default function ClientDashboard({ initialTournament }: { initialTourname
 
       {/* Right Column: Rounds & Pairings */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h3 className="text-2xl font-bold text-primary">Rounds</h3>
-          <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background/50 backdrop-blur-md p-4 rounded-xl shadow-sm border">
+          <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Rounds</h3>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {tournament.status !== "COMPLETED" && (
-              <Button variant="outline" onClick={handleMarkCompleted} disabled={loading} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={handleMarkCompleted} disabled={loading} className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Conclude
               </Button>
             )}
-            <Button onClick={handleGenerateRound} disabled={loading || initialTournament.players.length < 2 || tournament.status === "COMPLETED"} className="w-full sm:w-auto">
+            <Button onClick={handleGenerateRound} disabled={loading || initialTournament.players.length < 2 || tournament.status === "COMPLETED"} className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all">
               <Play className="w-4 h-4 mr-2" />
               Generate Next Round
             </Button>
           </div>
         </div>
 
-        {initialTournament.rounds.slice().reverse().map((round: any) => (
-          <Card key={round.id} className="overflow-hidden">
-            <div className="bg-muted px-4 sm:px-6 py-3 border-b flex justify-between items-center">
-              <span className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Round {round.roundNumber}</span>
+        {initialTournament.rounds.slice().reverse().map((round: any, idx: number) => (
+          <Card key={round.id} className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow duration-300">
+            <div className={`bg-gradient-to-r ${idx === 0 ? "from-indigo-500/10 to-purple-500/10" : "from-muted to-muted/50"} px-4 sm:px-6 py-4 border-b flex justify-between items-center`}>
+              <span className={`font-bold text-sm uppercase tracking-widest ${idx === 0 ? "text-indigo-600" : "text-muted-foreground"}`}>Round {round.roundNumber} {idx === 0 && "(Latest)"}</span>
             </div>
             <div className="overflow-x-auto">
               <Table className="min-w-[500px]">

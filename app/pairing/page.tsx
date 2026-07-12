@@ -98,20 +98,20 @@ export default function PairingAdmin() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 px-4 sm:px-0">
+    <div className="space-y-8 animate-in fade-in duration-500 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-primary">Tournaments</h2>
           <p className="text-muted-foreground">Manage your chess tournaments.</p>
         </div>
-        <form onSubmit={handleCreateTournament} className="flex gap-2 w-full md:w-auto">
+        <form onSubmit={handleCreateTournament} className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Input 
             placeholder="New tournament name..." 
             value={newTournamentName}
             onChange={(e) => setNewTournamentName(e.target.value)}
             className="w-full md:w-64"
           />
-          <Button type="submit" disabled={loading || !newTournamentName.trim()}>
+          <Button type="submit" disabled={loading || !newTournamentName.trim()} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Create
           </Button>
         </form>

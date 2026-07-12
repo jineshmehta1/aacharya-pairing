@@ -24,7 +24,7 @@ export async function getTournamentById(id: string) {
     where: { id },
     include: {
       players: {
-        orderBy: [{ score: "desc" }, { buchholz: "desc" }, { rating: "desc" }],
+        orderBy: [{ score: "desc" }, { buchholz: "desc" }, { sonnebornBerger: "desc" }, { cumulative: "desc" }, { rating: "desc" }],
       },
       rounds: {
         include: {
@@ -91,35 +91,44 @@ export async function generateNextRound(tournamentId: string) {
   }
 
   // Create Round and Matches in a transaction
-  await prisma.$transaction(async (tx) => {
-    const round = await tx.round.create({
-      data: {
-        roundNumber: nextRoundNumber,
-        tournamentId,
-      },
-    });
-
-    for (const p of pairings) {
-      await tx.match.create({
+  await prisma.$transaction(
+    async (tx) => {
+      const round = await tx.round.create({
         data: {
-          roundId: round.id,
-          player1Id: p.player1Id,
-          player2Id: p.player2Id,
-          result: p.player2Id === null ? "1-0" : null, // BYE automatically wins
+          roundNumber: nextRoundNumber,
+          tournamentId,
         },
       });
 
+      const matchData = pairings.map((p) => ({
+        roundId: round.id,
+        player1Id: p.player1Id,
+        player2Id: p.player2Id,
+        result: p.player2Id === null ? "1-0" : null, // BYE automatically wins
+      }));
+
+      await tx.match.createMany({
+        data: matchData,
+      });
+
       // If BYE, add score to player 1 immediately
-      if (p.player2Id === null) {
-        await tx.player.update({
-          where: { id: p.player1Id },
-          data: {
-            score: { increment: 1 },
-          },
-        });
+      const byePairings = pairings.filter((p) => p.player2Id === null);
+      if (byePairings.length > 0) {
+        await Promise.all(
+          byePairings.map((p) =>
+            tx.player.update({
+              where: { id: p.player1Id },
+              data: { score: { increment: 1 } },
+            })
+          )
+        );
       }
+    },
+    {
+      maxWait: 10000,
+      timeout: 30000,
     }
-  });
+  );
 
   revalidatePath(`/tournament/${tournamentId}`);
 }
@@ -166,12 +175,12 @@ export async function updateMatchResult(
   // A simple way is to re-calculate it for everyone in the tournament
   const match = await prisma.match.findUnique({ where: { id: matchId }, include: { round: true } });
   if (match) {
-    await updateBuchholz(match.round.tournamentId);
+    await updateTiebreakers(match.round.tournamentId);
     revalidatePath(`/tournament/${match.round.tournamentId}`);
   }
 }
 
-async function updateBuchholz(tournamentId: string) {
+async function updateTiebreakers(tournamentId: string) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
     include: {
@@ -191,20 +200,48 @@ async function updateBuchholz(tournamentId: string) {
 
   for (const player of tournament.players) {
     let buchholz = 0;
-    // Find all opponents this player played against
-    for (const round of tournament.rounds) {
+    let sonnebornBerger = 0;
+    let cumulative = 0;
+    let runningScore = 0;
+
+    // We must iterate rounds in order for cumulative
+    const sortedRounds = [...tournament.rounds].sort((a, b) => a.roundNumber - b.roundNumber);
+
+    for (const round of sortedRounds) {
+      let roundScoreIncrement = 0;
       for (const match of round.matches) {
-        if (match.player1Id === player.id && match.player2Id) {
-          buchholz += scores.get(match.player2Id) || 0;
+        if (match.player1Id === player.id) {
+          if (match.player2Id) {
+            buchholz += scores.get(match.player2Id) || 0;
+            if (match.result === "1-0") {
+              sonnebornBerger += scores.get(match.player2Id) || 0;
+              roundScoreIncrement = 1;
+            } else if (match.result === "1/2-1/2") {
+              sonnebornBerger += (scores.get(match.player2Id) || 0) / 2;
+              roundScoreIncrement = 0.5;
+            }
+          } else {
+            // BYE
+            roundScoreIncrement = 1;
+          }
         } else if (match.player2Id === player.id) {
           buchholz += scores.get(match.player1Id) || 0;
+          if (match.result === "0-1") {
+            sonnebornBerger += scores.get(match.player1Id) || 0;
+            roundScoreIncrement = 1;
+          } else if (match.result === "1/2-1/2") {
+            sonnebornBerger += (scores.get(match.player1Id) || 0) / 2;
+            roundScoreIncrement = 0.5;
+          }
         }
       }
+      runningScore += roundScoreIncrement;
+      cumulative += runningScore;
     }
 
     await prisma.player.update({
       where: { id: player.id },
-      data: { buchholz },
+      data: { buchholz, sonnebornBerger, cumulative },
     });
   }
 }
