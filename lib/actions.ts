@@ -152,7 +152,7 @@ export async function updateMatchResult(
   tournamentId: string,
   matchId: string,
   player1Id: string,
-  player2Id: string,
+  player2Id: string | null,
   result: "1-0" | "0-1" | "1/2-1/2" | null,
   previousResult: string | null
 ) {
@@ -162,9 +162,9 @@ export async function updateMatchResult(
   if (previousResult) {
     if (previousResult === "1-0") {
       operations.push(prisma.player.update({ where: { id: player1Id }, data: { score: { decrement: 1 } } }));
-    } else if (previousResult === "0-1") {
+    } else if (previousResult === "0-1" && player2Id) {
       operations.push(prisma.player.update({ where: { id: player2Id }, data: { score: { decrement: 1 } } }));
-    } else if (previousResult === "1/2-1/2") {
+    } else if (previousResult === "1/2-1/2" && player2Id) {
       operations.push(prisma.player.update({ where: { id: player1Id }, data: { score: { decrement: 0.5 } } }));
       operations.push(prisma.player.update({ where: { id: player2Id }, data: { score: { decrement: 0.5 } } }));
     }
@@ -174,9 +174,9 @@ export async function updateMatchResult(
   if (result) {
     if (result === "1-0") {
       operations.push(prisma.player.update({ where: { id: player1Id }, data: { score: { increment: 1 } } }));
-    } else if (result === "0-1") {
+    } else if (result === "0-1" && player2Id) {
       operations.push(prisma.player.update({ where: { id: player2Id }, data: { score: { increment: 1 } } }));
-    } else if (result === "1/2-1/2") {
+    } else if (result === "1/2-1/2" && player2Id) {
       operations.push(prisma.player.update({ where: { id: player1Id }, data: { score: { increment: 0.5 } } }));
       operations.push(prisma.player.update({ where: { id: player2Id }, data: { score: { increment: 0.5 } } }));
     }
