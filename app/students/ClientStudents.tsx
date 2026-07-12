@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createStudent, updateStudent, deleteStudent, verifyAdminPassword } from "@/lib/actions";
+import { useState, useEffect, useRef } from "react";
+import { createStudent, updateStudent, deleteStudent, verifyAdminPassword, addStudentsBulk } from "@/lib/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Lock, Edit2, Trash2, X } from "lucide-react";
+import { UserPlus, Lock, Edit2, Trash2, X, Upload } from "lucide-react";
 import { CardDescription } from "@/components/ui/card";
+import { read, utils } from "xlsx";
 
 export default function ClientStudents({ initialStudents }: { initialStudents: any[] }) {
   const [students, setStudents] = useState(initialStudents);
@@ -100,6 +101,52 @@ export default function ClientStudents({ initialStudents }: { initialStudents: a
     setLoading(false);
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const ab = evt.target?.result as ArrayBuffer;
+        const wb = read(ab, { type: "array" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = utils.sheet_to_json(ws);
+        
+        const studentsData = data.map((row: any) => {
+          const dobRaw = row.DOB || row.dob;
+          let dobParsed: Date | undefined = undefined;
+          if (dobRaw) {
+            dobParsed = new Date(dobRaw);
+            if (isNaN(dobParsed.getTime())) dobParsed = undefined;
+          }
+          return {
+            name: row.Name || row.name || "Unknown",
+            rating: parseInt(row.Rating || row.rating) || 1200,
+            fatherName: row["Father Name"] || row.fatherName || undefined,
+            dob: dobParsed,
+            phone: row.Phone || row.phone || undefined,
+          };
+        });
+
+        const updatedList = await addStudentsBulk(studentsData);
+        setStudents(updatedList);
+        setLoading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""; // Reset input
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
+
   const calculateAge = (dobString: string | null) => {
     if (!dobString) return "—";
     const birthDate = new Date(dobString);
@@ -186,14 +233,38 @@ export default function ClientStudents({ initialStudents }: { initialStudents: a
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Saving..." : editingStudentId ? "Update Student" : "Add Student"}
-                </Button>
-                {editingStudentId && (
-                  <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={loading}>
-                    <X className="w-4 h-4" />
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Saving..." : editingStudentId ? "Update Student" : "Add Student"}
                   </Button>
+                  {editingStudentId && (
+                    <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={loading}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                {!editingStudentId && (
+                  <>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept=".xlsx, .xls, .csv"
+                      onChange={handleFileUpload}
+                      disabled={loading}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2 border-dashed border-2 border-muted-foreground/30 hover:border-primary/50"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading}
+                    >
+                      <Upload className="w-4 h-4 text-muted-foreground" />
+                      <span>Upload Excel / CSV</span>
+                    </Button>
+                  </>
                 )}
               </div>
             </form>

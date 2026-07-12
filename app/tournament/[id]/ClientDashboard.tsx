@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { addPlayer, generateNextRound, updateMatchResult, markTournamentCompleted } from "@/lib/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Play, Plus, UserPlus, CheckCircle } from "lucide-react";
+import { Play, Plus, UserPlus, CheckCircle, Upload } from "lucide-react";
 
 import { read, utils } from "xlsx";
 
@@ -23,6 +23,7 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [optimisticResults, setOptimisticResults] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // We rely on revalidatePath in Server Actions to refresh the page, 
   // but since we are in a client component, we might want to let the Server Component handle the re-render.
@@ -247,22 +248,28 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
                   </div>
                 </>
               )}
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full" disabled={loading || tournament.status === "COMPLETED"}>
                   Add Player
                 </Button>
-                <div className="relative w-full">
-                  <Input 
-                    type="file" 
-                    accept=".xlsx, .xls, .csv" 
-                    onChange={handleFileUpload}
-                    disabled={loading || tournament.status === "COMPLETED"}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <Button type="button" variant="outline" className="w-full pointer-events-none" disabled={loading || tournament.status === "COMPLETED"}>
-                    Upload Excel
-                  </Button>
-                </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  className="hidden" 
+                  accept=".xlsx, .xls, .csv" 
+                  onChange={handleFileUpload}
+                  disabled={loading || tournament.status === "COMPLETED"}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2 border-dashed border-2 border-muted-foreground/30 hover:border-primary/50" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading || tournament.status === "COMPLETED"}
+                >
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span>Upload Excel / CSV</span>
+                </Button>
               </div>
             </form>
           </CardContent>

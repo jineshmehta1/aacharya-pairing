@@ -372,3 +372,20 @@ export async function markTournamentCompleted(tournamentId: string) {
   revalidatePath("/pairing");
   revalidatePath("/results");
 }
+
+export async function addStudentsBulk(studentsData: { name: string, rating?: number, fatherName?: string, dob?: Date, phone?: string }[]) {
+  const data = studentsData.map((p) => ({
+    name: p.name,
+    rating: p.rating || 1200,
+    fatherName: p.fatherName || null,
+    dob: p.dob || null,
+    phone: p.phone || null,
+  }));
+  await prisma.student.createMany({
+    data,
+  });
+  revalidatePath("/students");
+  return await prisma.student.findMany({
+    orderBy: { name: "asc" },
+  });
+}
