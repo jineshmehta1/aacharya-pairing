@@ -51,6 +51,27 @@ export function generateSwissPairings(
     playerRankMap[p.id] = idx;
   });
 
+  // Precompute score groups and relative ranks within each score group
+  const scoreGroups: Record<number, Player[]> = {};
+  for (const p of sortedPlayers) {
+    if (!scoreGroups[p.score]) {
+      scoreGroups[p.score] = [];
+    }
+    scoreGroups[p.score].push(p);
+  }
+
+  const playerRelativeRankMap: Record<string, { relRank: number; groupSize: number }> = {};
+  for (const scoreStr of Object.keys(scoreGroups)) {
+    const score = Number(scoreStr);
+    const group = scoreGroups[score];
+    group.forEach((p, relRank) => {
+      playerRelativeRankMap[p.id] = {
+        relRank,
+        groupSize: group.length,
+      };
+    });
+  }
+
   const hasPlayed = (id1: string, id2: string) => {
     return history.some(
       (m) =>
@@ -209,9 +230,18 @@ export function generateSwissPairings(
       const scoreCost = scoreDiff * scoreDiff * 1000000;
       const prefCost = colorAssign.penalty;
       
-      const rank1 = playerRankMap[p1.id];
-      const rank2 = playerRankMap[p2.id];
-      const rankCost = Math.abs(rank1 - rank2) * 0.1;
+      let rankCost = 0;
+      if (p1.score === p2.score) {
+        const info1 = playerRelativeRankMap[p1.id];
+        const info2 = playerRelativeRankMap[p2.id];
+        const idealOffset = Math.floor(info1.groupSize / 2);
+        const actualOffset = Math.abs(info1.relRank - info2.relRank);
+        rankCost = Math.abs(actualOffset - idealOffset) * 0.1;
+      } else {
+        const rank1 = playerRankMap[p1.id];
+        const rank2 = playerRankMap[p2.id];
+        rankCost = Math.abs(rank1 - rank2) * 0.1;
+      }
       
       options.push({
         opponent: p2,
