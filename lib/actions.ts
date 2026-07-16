@@ -24,7 +24,7 @@ export async function getTournamentById(id: string) {
     where: { id },
     include: {
       players: {
-        orderBy: [{ score: "desc" }, { buchholz: "desc" }, { sonnebornBerger: "desc" }, { cumulative: "desc" }, { rating: "desc" }],
+        orderBy: [{ score: "desc" }, { buchholz: "desc" }, { sonnebornBerger: "desc" }, { cumulative: "desc" }, { rating: "desc" }, { name: "asc" }],
       },
       rounds: {
         include: {
@@ -388,4 +388,18 @@ export async function addStudentsBulk(studentsData: { name: string, rating?: num
   return await prisma.student.findMany({
     orderBy: { name: "asc" },
   });
+}
+
+export async function removePlayer(tournamentId: string, playerId: string) {
+  const roundsCount = await prisma.round.count({
+    where: { tournamentId },
+  });
+  if (roundsCount > 0) {
+    throw new Error("Cannot remove player after rounds have started.");
+  }
+
+  await prisma.player.delete({
+    where: { id: playerId },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
 }

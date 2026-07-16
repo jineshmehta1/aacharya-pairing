@@ -283,7 +283,8 @@ export default function ClientStudents({ initialStudents }: { initialStudents: a
             <Table className="min-w-[500px]">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="pl-6 font-semibold text-foreground">Name</TableHead>
+                  <TableHead className="pl-6 w-16 text-center font-semibold text-foreground">S.No</TableHead>
+                  <TableHead className="font-semibold text-foreground">Name</TableHead>
                   <TableHead className="font-semibold text-foreground">Father's Name</TableHead>
                   <TableHead className="text-center font-semibold text-foreground">DOB</TableHead>
                   <TableHead className="text-center font-semibold text-foreground">Age</TableHead>
@@ -292,9 +293,10 @@ export default function ClientStudents({ initialStudents }: { initialStudents: a
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((s: any) => (
+                {students.map((s: any, index: number) => (
                   <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="pl-6 font-semibold">{s.name}</TableCell>
+                    <TableCell className="pl-6 text-center font-semibold text-muted-foreground">{index + 1}</TableCell>
+                    <TableCell className="font-semibold">{s.name}</TableCell>
                     <TableCell className="text-muted-foreground">{s.fatherName || "—"}</TableCell>
                     <TableCell className="text-center text-muted-foreground">
                       {s.dob ? new Date(s.dob).toLocaleDateString() : "—"}
@@ -317,7 +319,7 @@ export default function ClientStudents({ initialStudents }: { initialStudents: a
                 ))}
                 {students.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       No students registered yet. Add some on the left.
                     </TableCell>
                   </TableRow>

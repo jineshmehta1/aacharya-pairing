@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { addPlayer, generateNextRound, updateMatchResult, markTournamentCompleted } from "@/lib/actions";
+import { addPlayer, generateNextRound, updateMatchResult, markTournamentCompleted, removePlayer } from "@/lib/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Play, Plus, UserPlus, CheckCircle, Upload } from "lucide-react";
+import { Play, Plus, UserPlus, CheckCircle, Upload, Trash2 } from "lucide-react";
 
 import { read, utils } from "xlsx";
 
@@ -141,6 +141,18 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
         match.result
       );
     });
+  };
+
+  const handleRemovePlayer = async (playerId: string, playerName: string) => {
+    if (!confirm(`Are you sure you want to remove player "${playerName}" from the tournament?`)) return;
+    setLoading(true);
+    try {
+      await removePlayer(tournament.id, playerId);
+    } catch (err: any) {
+      alert(err.message || "Failed to remove player");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMarkCompleted = async () => {
@@ -284,19 +296,24 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
             <Table className="min-w-[500px]">
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="pl-6 rounded-tl-lg font-semibold text-foreground">Name</TableHead>
+                  <TableHead className="pl-6 w-16 text-center rounded-tl-lg font-semibold text-foreground">S.No</TableHead>
+                  <TableHead className="font-semibold text-foreground">Name</TableHead>
                   <TableHead className="text-center font-semibold text-foreground">Age</TableHead>
                   <TableHead className="text-center font-semibold text-foreground">Results</TableHead>
                   <TableHead className="font-semibold text-foreground">Pts</TableHead>
                   <TableHead className="text-muted-foreground text-xs" title="Buchholz">BH</TableHead>
                   <TableHead className="text-muted-foreground text-xs" title="Sonneborn-Berger">SB</TableHead>
                   <TableHead className="pr-6 text-muted-foreground text-xs" title="Cumulative">CUM</TableHead>
+                  {initialTournament.rounds.length === 0 && (
+                    <TableHead className="w-16 pr-6 text-right font-semibold text-foreground">Action</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialTournament.players.map((p: any) => (
+                {initialTournament.players.map((p: any, index: number) => (
                   <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="pl-6 font-semibold">
+                    <TableCell className="pl-6 text-center font-semibold text-muted-foreground">{index + 1}</TableCell>
+                    <TableCell className="font-semibold">
                       {p.name}
                       {p.fatherName && <span className="block text-xs font-normal text-muted-foreground">s/o {p.fatherName}</span>}
                     </TableCell>
@@ -320,11 +337,24 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
                     <TableCell className="text-muted-foreground font-mono text-sm">{p.buchholz}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-sm">{p.sonnebornBerger ?? 0}</TableCell>
                     <TableCell className="pr-6 text-muted-foreground font-mono text-sm">{p.cumulative ?? 0}</TableCell>
+                    {initialTournament.rounds.length === 0 && (
+                      <TableCell className="pr-6 text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100" 
+                          onClick={() => handleRemovePlayer(p.id, p.name)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {initialTournament.players.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                    <TableCell colSpan={initialTournament.rounds.length === 0 ? 9 : 8} className="text-center text-muted-foreground py-4">
                       No players yet.
                     </TableCell>
                   </TableRow>
@@ -362,14 +392,16 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
               <Table className="min-w-[500px]">
                 <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/3">White (Player 1)</TableHead>
-                  <TableHead className="w-1/3">Black (Player 2)</TableHead>
-                  <TableHead className="w-1/3 text-right">Result</TableHead>
+                  <TableHead className="w-16 pl-6 text-center">Table</TableHead>
+                  <TableHead className="w-[30%]">White (Player 1)</TableHead>
+                  <TableHead className="w-[30%]">Black (Player 2)</TableHead>
+                  <TableHead className="text-right">Result</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {round.matches.map((match: any) => (
+                {round.matches.map((match: any, matchIdx: number) => (
                   <TableRow key={match.id}>
+                    <TableCell className="pl-6 text-center font-bold text-muted-foreground">{matchIdx + 1}</TableCell>
                     <TableCell className="font-medium">{match.player1.name} {match.player2 ? "" : "(BYE)"}</TableCell>
                     <TableCell>{match.player2?.name || "—"}</TableCell>
                     <TableCell className="text-right">

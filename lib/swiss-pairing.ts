@@ -39,11 +39,12 @@ export function generateSwissPairings(
 ): Pairing[] {
   if (players.length === 0) return [];
 
-  // Sort players by score, then Buchholz, then rating to establish rankings
+  // Sort players by score, then Buchholz, then rating, then name (alphabetical) to establish rankings
   const sortedPlayers = [...players].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
-    return b.rating - a.rating;
+    if (b.rating !== a.rating) return b.rating - a.rating;
+    return a.name.localeCompare(b.name);
   });
 
   const playerRankMap: Record<string, number> = {};
@@ -193,12 +194,15 @@ export function generateSwissPairings(
 
   let bestCost = Infinity;
   let bestPairings: Pairing[] = [];
+  let iterations = 0;
+  const MAX_ITERATIONS = 10000;
 
   function search(
     unpaired: Player[],
     currentPairings: Pairing[],
     currentCost: number
   ) {
+    if (iterations++ > MAX_ITERATIONS) return;
     if (currentCost >= bestCost) return;
 
     if (unpaired.length === 0) {
@@ -218,10 +222,13 @@ export function generateSwissPairings(
     }[] = [];
 
     // Option A: Pair with an opponent
+    let candidatesChecked = 0;
     for (let i = 0; i < rest.length; i++) {
       const p2 = rest[i];
       
       if (hasPlayed(p1.id, p2.id)) continue;
+      if (candidatesChecked >= 12) break;
+      candidatesChecked++;
       
       const colorAssign = getColorAssignment(p1.id, p2.id);
       if (!colorAssign) continue;
