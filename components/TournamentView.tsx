@@ -168,15 +168,15 @@ export function TournamentView({ tournament }: TournamentViewProps) {
                   <span>Round {selectedRound.roundNumber} Pairings & Results</span>
                 </h3>
                 
-                <div className="relative pt-12 sm:pt-0 border rounded-xl bg-card overflow-hidden">
-                  <ZoomableTable>
-                    <Table className="min-w-[800px]">
+                <div className="relative pt-0 border rounded-xl bg-card overflow-hidden">
+                  <ZoomableTable width={500}>
+                    <Table className="min-w-[500px]">
                       <TableHeader>
                         <TableRow className="bg-muted/50 hover:bg-muted/50">
-                          <TableHead className="w-16 pl-6 text-center font-semibold text-foreground">Table</TableHead>
-                          <TableHead className="w-[35%] font-semibold text-foreground">White (Player 1)</TableHead>
-                          <TableHead className="w-[35%] font-semibold text-foreground">Black (Player 2)</TableHead>
-                          <TableHead className="text-right pr-6 font-semibold text-foreground">Result</TableHead>
+                          <TableHead className="w-16 pl-4 text-center font-bold text-foreground text-xs sm:text-base">Table</TableHead>
+                          <TableHead className="font-bold text-foreground text-xs sm:text-base">White (Player 1)</TableHead>
+                          <TableHead className="font-bold text-foreground text-xs sm:text-base">Black (Player 2)</TableHead>
+                          <TableHead className="text-right pr-4 font-bold text-foreground text-xs sm:text-base">Result</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -184,43 +184,43 @@ export function TournamentView({ tournament }: TournamentViewProps) {
                           const isBye = match.player2Id === null;
                           return (
                             <TableRow key={match.id} className="hover:bg-muted/20 transition-colors">
-                              <TableCell className="pl-6 text-center font-bold text-muted-foreground">
+                              <TableCell className="pl-4 text-center font-extrabold text-muted-foreground text-xs sm:text-base">
                                 {matchIdx + 1}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-foreground text-sm sm:text-base">
+                              <TableCell className="py-3 pr-2">
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-extrabold text-foreground text-sm sm:text-base break-words leading-tight">
                                     {match.player1.name}
                                   </span>
-                                  <span className="text-xs text-muted-foreground font-mono">
+                                  <span className="text-[10px] sm:text-sm text-muted-foreground font-mono mt-0.5">
                                     Rating: {match.player1.rating}
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="py-3 pr-2">
                                 {isBye ? (
-                                  <span className="font-medium text-muted-foreground italic text-sm sm:text-base">
-                                    BYE (No opponent)
+                                  <span className="font-medium text-muted-foreground italic text-xs sm:text-base break-words">
+                                    BYE
                                   </span>
                                 ) : (
-                                  <div className="flex flex-col">
-                                    <span className="font-bold text-foreground text-sm sm:text-base">
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-extrabold text-foreground text-sm sm:text-base break-words leading-tight">
                                       {match.player2?.name}
                                     </span>
-                                    <span className="text-xs text-muted-foreground font-mono">
+                                    <span className="text-[10px] sm:text-sm text-muted-foreground font-mono mt-0.5">
                                       Rating: {match.player2?.rating}
                                     </span>
                                   </div>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right pr-6">
+                              <TableCell className="text-right pr-4 py-3">
                                 {isBye ? (
-                                  <Badge variant="outline" className="bg-muted text-muted-foreground border-none">1-0 (BYE)</Badge>
+                                  <Badge variant="outline" className="bg-muted text-muted-foreground border-none text-[10px] sm:text-sm font-bold px-1 sm:px-2 py-0.5">1-0</Badge>
                                 ) : !match.result ? (
-                                  <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                                  <Badge variant="outline" className="text-muted-foreground text-[10px] sm:text-sm font-semibold px-1 sm:px-2 py-0.5">Pend</Badge>
                                 ) : (
-                                  <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-3 py-1 border-none shadow-sm">
-                                    {match.result === "1/2-1/2" ? "½ - ½" : match.result}
+                                  <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-[10px] sm:text-sm px-1.5 sm:px-3 py-1 border-none shadow-sm">
+                                    {match.result === "1/2-1/2" ? "½-½" : match.result}
                                   </Badge>
                                 )}
                               </TableCell>

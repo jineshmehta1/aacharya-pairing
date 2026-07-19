@@ -389,44 +389,48 @@ export default function ClientDashboard({ initialTournament, students = [] }: { 
               <span className={`font-bold text-sm uppercase tracking-widest ${idx === 0 ? "text-indigo-600" : "text-muted-foreground"}`}>Round {round.roundNumber} {idx === 0 && "(Latest)"}</span>
             </div>
             <div className="overflow-x-auto">
-              <Table className="min-w-[500px]">
+              <Table className="w-full">
                 <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16 pl-6 text-center">Table</TableHead>
-                  <TableHead className="w-[30%]">White (Player 1)</TableHead>
-                  <TableHead className="w-[30%]">Black (Player 2)</TableHead>
-                  <TableHead className="text-right">Result</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {round.matches.map((match: any, matchIdx: number) => (
-                  <TableRow key={match.id}>
-                    <TableCell className="pl-6 text-center font-bold text-muted-foreground">{matchIdx + 1}</TableCell>
-                    <TableCell className="font-medium">{match.player1.name} {match.player2 ? "" : "(BYE)"}</TableCell>
-                    <TableCell>{match.player2?.name || "—"}</TableCell>
-                    <TableCell className="text-right">
-                      {match.player2 === null ? (
-                        <Badge variant="outline">1-0 (BYE)</Badge>
-                      ) : (
-                        <Select 
-                          disabled={isPending || loading} 
-                          value={optimisticResults[match.id] ?? match.result ?? "PENDING"} 
-                          onValueChange={(val) => handleResultChange(match, (val || "") === "PENDING" ? "" : (val as string))}
-                        >
-                          <SelectTrigger className="w-[120px] ml-auto">
-                            <SelectValue placeholder="Result" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="1-0">1-0 (P1 Wins)</SelectItem>
-                            <SelectItem value="0-1">0-1 (P2 Wins)</SelectItem>
-                            <SelectItem value="1/2-1/2">1/2-1/2 (Draw)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
+                  <TableRow>
+                    <TableHead className="w-16 pl-4 text-center font-bold text-xs sm:text-base">Table</TableHead>
+                    <TableHead className="font-bold text-xs sm:text-base">White (Player 1)</TableHead>
+                    <TableHead className="font-bold text-xs sm:text-base">Black (Player 2)</TableHead>
+                    <TableHead className="text-right pr-4 font-bold text-xs sm:text-base">Result</TableHead>
                   </TableRow>
-                ))}
+                </TableHeader>
+                <TableBody>
+                  {round.matches.map((match: any, matchIdx: number) => (
+                    <TableRow key={match.id}>
+                      <TableCell className="pl-4 text-center font-extrabold text-muted-foreground text-xs sm:text-base">{matchIdx + 1}</TableCell>
+                      <TableCell className="py-3 pr-2 font-extrabold text-sm sm:text-base text-foreground break-words leading-tight">
+                        {match.player1.name} {match.player2 ? "" : "(BYE)"}
+                      </TableCell>
+                      <TableCell className="py-3 pr-2 font-extrabold text-sm sm:text-base text-foreground break-words leading-tight">
+                        {match.player2?.name || "—"}
+                      </TableCell>
+                      <TableCell className="text-right pr-4 py-3">
+                        {match.player2 === null ? (
+                          <Badge variant="outline" className="text-[10px] sm:text-sm font-bold bg-muted px-1.5 sm:px-2 py-0.5">1-0</Badge>
+                        ) : (
+                          <Select 
+                            disabled={isPending || loading} 
+                            value={optimisticResults[match.id] ?? match.result ?? "PENDING"} 
+                            onValueChange={(val) => handleResultChange(match, (val || "") === "PENDING" ? "" : (val as string))}
+                          >
+                            <SelectTrigger className="w-[95px] sm:w-[120px] ml-auto text-[10px] sm:text-sm h-8 sm:h-9 px-1.5 sm:px-3">
+                              <SelectValue placeholder="Result" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PENDING">Pending</SelectItem>
+                              <SelectItem value="1-0">1-0</SelectItem>
+                              <SelectItem value="0-1">0-1</SelectItem>
+                              <SelectItem value="1/2-1/2">½-½</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

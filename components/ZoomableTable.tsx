@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 
 interface ZoomableTableProps {
   children: React.ReactNode;
+  width?: number;
 }
 
-export function ZoomableTable({ children }: ZoomableTableProps) {
+export function ZoomableTable({ children, width = 800 }: ZoomableTableProps) {
   const [isFitMode, setIsFitMode] = useState(true);
   const [scale, setScale] = useState(1);
   const [containerHeight, setContainerHeight] = useState<string | number>("auto");
@@ -22,7 +23,7 @@ export function ZoomableTable({ children }: ZoomableTableProps) {
       if (!containerRef.current || !contentRef.current) return;
       
       const containerWidth = containerRef.current.parentElement?.clientWidth || containerRef.current.clientWidth;
-      const contentWidth = 800; // min-w-[800px] of our table
+      const contentWidth = width; // Custom width of our table
       
       const mobileActive = containerWidth < contentWidth;
       setIsMobile(mobileActive);
@@ -59,7 +60,7 @@ export function ZoomableTable({ children }: ZoomableTableProps) {
         resizeObserver.disconnect();
       }
     };
-  }, [isFitMode]);
+  }, [isFitMode, width]);
 
   return (
     <div className="relative w-full">
@@ -100,7 +101,7 @@ export function ZoomableTable({ children }: ZoomableTableProps) {
           ref={contentRef}
           className="transition-all duration-300 ease-in-out"
           style={{
-            width: isMobile && isFitMode ? "800px" : "100%",
+            width: isMobile && isFitMode ? `${width}px` : "100%",
             transform: isMobile && isFitMode ? `scale(${scale})` : "scale(1)",
             transformOrigin: "top left",
           }}
