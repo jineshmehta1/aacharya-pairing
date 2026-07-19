@@ -168,91 +168,68 @@ export function TournamentView({ tournament }: TournamentViewProps) {
                   <span>Round {selectedRound.roundNumber} Pairings & Results</span>
                 </h3>
                 
-                <div className="grid gap-4 md:grid-cols-2">
-                  {selectedRound.matches.map((match, matchIdx) => {
-                    const hasFinished = !!match.result;
-                    const isBye = match.player2Id === null;
-                    
-                    return (
-                      <div
-                        key={match.id}
-                        className="p-4 rounded-xl border bg-card hover:bg-muted/5 transition-all flex flex-col justify-between gap-3 shadow-sm hover:shadow-md relative overflow-hidden"
-                      >
-                        {/* Board Number Tag */}
-                        <div className="absolute right-0 top-0 bg-muted px-2.5 py-1 text-xs font-mono text-muted-foreground rounded-bl-lg">
-                          Board {matchIdx + 1}
-                        </div>
-
-                        {/* Players Section */}
-                        <div className="space-y-3 pr-12">
-                          {/* Player 1 (White) */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-base text-foreground flex items-center gap-2">
-                                {match.player1.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground font-mono">
-                                Rating: {match.player1.rating}
-                              </span>
-                            </div>
-                            {hasFinished && match.result === "1-0" && (
-                              <Badge className="bg-green-500 hover:bg-green-500 text-white font-black px-2 py-0.5">1</Badge>
-                            )}
-                            {hasFinished && match.result === "0-1" && (
-                              <Badge variant="outline" className="text-muted-foreground font-black px-2 py-0.5">0</Badge>
-                            )}
-                            {hasFinished && match.result === "1/2-1/2" && (
-                              <Badge variant="secondary" className="text-foreground font-black px-2 py-0.5">½</Badge>
-                            )}
-                            {!hasFinished && (
-                              <Badge variant="outline" className="text-muted-foreground font-bold px-2 py-0.5">-</Badge>
-                            )}
-                          </div>
-
-                          <div className="h-px bg-muted"></div>
-
-                          {/* Player 2 (Black or BYE) */}
-                          <div className="flex items-center justify-between">
-                            {isBye ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium text-base text-muted-foreground italic">
-                                  BYE (No opponent)
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col">
-                                <span className="font-bold text-base text-foreground">
-                                  {match.player2?.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground font-mono">
-                                  Rating: {match.player2?.rating}
-                                </span>
-                              </div>
-                            )}
-
-                            {isBye ? (
-                              <Badge className="bg-muted hover:bg-muted text-muted-foreground font-bold px-2 py-0.5">BYE</Badge>
-                            ) : (
-                              <>
-                                {hasFinished && match.result === "0-1" && (
-                                  <Badge className="bg-green-500 hover:bg-green-500 text-white font-black px-2 py-0.5">1</Badge>
+                <div className="relative pt-12 sm:pt-0 border rounded-xl bg-card overflow-hidden">
+                  <ZoomableTable>
+                    <Table className="min-w-[800px]">
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableHead className="w-16 pl-6 text-center font-semibold text-foreground">Table</TableHead>
+                          <TableHead className="w-[35%] font-semibold text-foreground">White (Player 1)</TableHead>
+                          <TableHead className="w-[35%] font-semibold text-foreground">Black (Player 2)</TableHead>
+                          <TableHead className="text-right pr-6 font-semibold text-foreground">Result</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedRound.matches.map((match, matchIdx) => {
+                          const isBye = match.player2Id === null;
+                          return (
+                            <TableRow key={match.id} className="hover:bg-muted/20 transition-colors">
+                              <TableCell className="pl-6 text-center font-bold text-muted-foreground">
+                                {matchIdx + 1}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-foreground text-sm sm:text-base">
+                                    {match.player1.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground font-mono">
+                                    Rating: {match.player1.rating}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {isBye ? (
+                                  <span className="font-medium text-muted-foreground italic text-sm sm:text-base">
+                                    BYE (No opponent)
+                                  </span>
+                                ) : (
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-foreground text-sm sm:text-base">
+                                      {match.player2?.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      Rating: {match.player2?.rating}
+                                    </span>
+                                  </div>
                                 )}
-                                {hasFinished && match.result === "1-0" && (
-                                  <Badge variant="outline" className="text-muted-foreground font-black px-2 py-0.5">0</Badge>
+                              </TableCell>
+                              <TableCell className="text-right pr-6">
+                                {isBye ? (
+                                  <Badge variant="outline" className="bg-muted text-muted-foreground border-none">1-0 (BYE)</Badge>
+                                ) : !match.result ? (
+                                  <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                                ) : (
+                                  <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-3 py-1 border-none shadow-sm">
+                                    {match.result === "1/2-1/2" ? "½ - ½" : match.result}
+                                  </Badge>
                                 )}
-                                {hasFinished && match.result === "1/2-1/2" && (
-                                  <Badge variant="secondary" className="text-foreground font-black px-2 py-0.5">½</Badge>
-                                )}
-                                {!hasFinished && (
-                                  <Badge variant="outline" className="text-muted-foreground font-bold px-2 py-0.5">-</Badge>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </ZoomableTable>
                 </div>
               </div>
             </>
